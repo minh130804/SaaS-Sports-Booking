@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const axiosClient = axios.create({
-  baseURL: "http://localhost:8000/api", // Đảm bảo đúng port backend của bạn
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:8000/api", // Hỗ trợ Vercel Environment Variables
   headers: {
     "Content-Type": "application/json",
   },
