@@ -16,48 +16,60 @@ const createBookingWithPayment = async (bookingData, userId, tenantId, clientIp)
     }
   }
 
-  const overlap = await Booking.findOne({
-    where: {
+  const { sequelize } = require("../config/database");
+  const t = await sequelize.transaction();
+
+  try {
+    const overlap = await Booking.findOne({
+      where: {
+        field_id: bookingData.field_id,
+        booking_date: bookingData.booking_date,
+        status: { [Op.ne]: "CANCELLED" },
+        [Op.and]: [
+          { start_time: { [Op.lt]: bookingData.end_time } },
+          { end_time: { [Op.gt]: bookingData.start_time } },
+        ],
+      },
+      transaction: t,
+      lock: t.LOCK.UPDATE,
+    });
+
+    if (overlap) {
+      throw { status: 400, message: "Rất tiếc, khung giờ này vừa có người nhanh tay đặt mất!" };
+    }
+
+    const txnRef = `${Date.now()}${userId}`;
+
+    const newBooking = await Booking.create({
       field_id: bookingData.field_id,
       booking_date: bookingData.booking_date,
-      status: { [Op.ne]: "CANCELLED" },
-      [Op.and]: [
-        { start_time: { [Op.lt]: bookingData.end_time } },
-        { end_time: { [Op.gt]: bookingData.start_time } },
-      ],
-    },
-  });
+      start_time: bookingData.start_time,
+      end_time: bookingData.end_time,
+      total_price: bookingData.total_price,
+      user_id: userId,
+      tenant_id: tenantId,
+      status: "PENDING",
+      payment_method,
+      payment_status: "UNPAID",
+      vnpay_txn_ref: txnRef,
+    }, { transaction: t });
 
-  if (overlap) {
-    throw { status: 400, message: "Rất tiếc, khung giờ này vừa có người nhanh tay đặt mất!" };
+    await t.commit();
+
+    const field = await Field.findByPk(bookingData.field_id);
+    const orderInfo = `Dat san ${field?.name || "the thao"} ngay ${bookingData.booking_date}`;
+    const paymentUrl = createPaymentUrl(
+      bookingData.total_price,
+      orderInfo,
+      txnRef,
+      clientIp,
+    );
+    console.log("👉 Generated VNPAY URL:", paymentUrl);
+    return { booking: newBooking, paymentUrl };
+  } catch (error) {
+    await t.rollback();
+    throw error;
   }
-
-  const txnRef = `${Date.now()}${userId}`;
-
-  const newBooking = await Booking.create({
-    field_id: bookingData.field_id,
-    booking_date: bookingData.booking_date,
-    start_time: bookingData.start_time,
-    end_time: bookingData.end_time,
-    total_price: bookingData.total_price,
-    user_id: userId,
-    tenant_id: tenantId,
-    status: "PENDING",
-    payment_method,
-    payment_status: "UNPAID",
-    vnpay_txn_ref: txnRef,
-  });
-
-  const field = await Field.findByPk(bookingData.field_id);
-  const orderInfo = `Dat san ${field?.name || "the thao"} ngay ${bookingData.booking_date}`;
-  const paymentUrl = createPaymentUrl(
-    bookingData.total_price,
-    orderInfo,
-    txnRef,
-    clientIp,
-  );
-  console.log("👉 Generated VNPAY URL:", paymentUrl);
-  return { booking: newBooking, paymentUrl };
 };
 
 const handleVnpayReturn = async (vnpParams) => {

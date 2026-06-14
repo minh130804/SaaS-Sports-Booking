@@ -120,8 +120,8 @@ const FieldBooking = () => {
             const { sortedSlots, totalCost, fieldId, date } = pendingBookingInfo;
             const response = await axiosClient.post('/payments/create', {
                 customer_name: values.customer_name,
-                customer_phone: values.customer_phone,
-                customer_email: values.customer_email,
+                customer_phone: userInfo.phone,
+                customer_email: userInfo.email,
                 field_id: fieldId,
                 booking_date: date,
                 start_time: sortedSlots[0].startTime,
@@ -195,23 +195,12 @@ const FieldBooking = () => {
                             >
                                 <Input placeholder="Nhập tên người đặt sân" size="large" />
                             </Form.Item>
-                            <Form.Item 
-                                label={<b style={{ color: '#334155' }}>Số điện thoại</b>} 
-                                name="customer_phone" 
-                                rules={[{ required: true, message: 'Vui lòng nhập số điện thoại!' }]}
-                                style={{ marginBottom: 12 }}
-                            >
-                                <Input placeholder="Nhập số điện thoại liên hệ" size="large" />
-                            </Form.Item>
-                            <Form.Item 
-                                label={<b style={{ color: '#334155' }}>Email (Tùy chọn)</b>} 
-                                name="customer_email" 
-                                rules={[{ type: 'email', message: 'Email không hợp lệ!' }]}
-                                style={{ marginBottom: 0 }}
-                                extra={<span style={{ fontSize: 12 }}>Để nhận hoá đơn đặt sân</span>}
-                            >
-                                <Input placeholder="Nhập email để nhận biên lai" size="large" />
-                            </Form.Item>
+
+                            
+                            <div style={{ marginBottom: 20, fontSize: 13, color: '#64748b' }}>
+                                <InfoCircleOutlined style={{ marginRight: 6 }} />
+                                Hệ thống sẽ sử dụng Số điện thoại và Email đăng ký tài khoản của bạn để liên hệ và gửi hóa đơn.
+                            </div>
                         </Form>
 
                         <div style={{ 
@@ -343,7 +332,7 @@ const FieldBooking = () => {
                         <div style={{ minWidth: Math.max(1200, (timelineData[0]?.slots?.length || 0) * 50), border: '1px solid #e2e8f0', borderRadius: 8, overflow: 'hidden' }}>
 
                             <div style={{ display: 'flex', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', height: 48 }}>
-                                <div style={{ width: 120, flexShrink: 0, borderRight: '1px solid #e2e8f0', background: '#f8fafc' }}></div>
+                                <div style={{ width: 150, flexShrink: 0, borderRight: '1px solid #e2e8f0', background: '#f8fafc' }}></div>
                                 
                                 <div style={{ display: 'flex', flex: 1 }}>
                                     {timelineData[0]?.slots.map((slot, i) => {
@@ -358,7 +347,7 @@ const FieldBooking = () => {
                                                 {isLast && (
                                                     <>
                                                         <div style={{ position: 'absolute', bottom: 12, right: 0, transform: 'translateX(50%)', fontSize: 13, color: '#64748b', fontWeight: 600 }}>
-                                                            {slot.endTime}
+                                                            {slot.endTime === '00:00' ? '24:00' : slot.endTime}
                                                         </div>
                                                         <div style={{ position: 'absolute', bottom: 0, right: 0, width: 2, height: 8, background: '#10b981' }}></div>
                                                     </>
@@ -367,13 +356,15 @@ const FieldBooking = () => {
                                         );
                                     })}
                                 </div>
+                                <div style={{ width: 24, flexShrink: 0, background: '#f8fafc' }}></div>
                             </div>
 
                             {timelineData.map(field => (
                                 <div key={field.fieldId} style={{ display: 'flex', borderBottom: '1px solid #e2e8f0' }}>
                                     
-                                    <div style={{ width: 120, flexShrink: 0, paddingLeft: 16, background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
-                                        {field.fieldName}
+                                    <div style={{ width: 150, flexShrink: 0, paddingLeft: 16, background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                        <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a' }}>{field.fieldName}</div>
+                                        {field.fieldType && <div style={{ fontSize: 12, color: '#64748b', fontWeight: 500, marginTop: 2 }}>{field.fieldType}</div>}
                                     </div>
                                     
                                     <div style={{ display: 'flex', flex: 1 }}>
@@ -405,6 +396,7 @@ const FieldBooking = () => {
                                             )
                                         })}
                                     </div>
+                                    <div style={{ width: 24, flexShrink: 0, background: '#ffffff' }}></div>
                                 </div>
                             ))}
                         </div>

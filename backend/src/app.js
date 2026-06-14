@@ -21,6 +21,7 @@ const { checkSubscription } = require("./middlewares/subscription.middleware");
 
 // Khởi tạo các cron jobs
 require("./cron/subscription.cron");
+require("./cron/booking.cron");
 
 const path = require("path");
 
